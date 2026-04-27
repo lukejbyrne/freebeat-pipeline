@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "freebeat": {
+      "command": "bash",
+      "args": ["scripts/freebeat-mcp.sh"]
+    }
+  }
+}

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Faceless YouTube Pipeline — Setup Guide</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  html { scroll-behavior: smooth; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  .step.done .step-num { background:#10b981; color:#fff; }
+  .step.active { box-shadow: 0 0 0 2px #f97316 inset; }
+  .copy-btn:hover { background:#27272a; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+<!-- top bar -->
+<header class="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+  <div class="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
+    <div class="font-semibold tracking-tight">Faceless YouTube Pipeline</div>
+    <div class="text-zinc-500 text-sm hidden md:block">Claude Code · KIE (Suno) · Freebeat MCP</div>
+    <div class="ml-auto flex items-center gap-3">
+      <div id="progress-text" class="text-sm text-zinc-400">0 / 7</div>
+      <a href="https://freebeat.ai/?ref=ailuke" target="_blank" rel="noopener"
+         class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-3 py-1.5 rounded-md text-sm">
+        Get Freebeat →
+      </a>
+    </div>
+  </div>
+  <div class="h-1 bg-zinc-800">
+    <div id="progress-bar" class="h-1 bg-orange-500 transition-all" style="width:0%"></div>
+  </div>
+</header>
+
+<div class="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-10">
+
+  <!-- side nav -->
+  <nav class="md:sticky md:top-24 md:self-start text-sm">
+    <ol id="side-nav" class="space-y-2 text-zinc-400">
+      <li><a href="#step-1" class="hover:text-zinc-100">1. Install Claude Code</a></li>
+      <li><a href="#step-2" class="hover:text-zinc-100">2. Clone the repo</a></li>
+      <li><a href="#step-3" class="hover:text-zinc-100">3. Get a KIE API key</a></li>
+      <li><a href="#step-4" class="hover:text-zinc-100">4. Install Freebeat MCP</a></li>
+      <li><a href="#step-5" class="hover:text-zinc-100">5. Run the pipeline</a></li>
+      <li><a href="#step-6" class="hover:text-zinc-100">6. Batch mode</a></li>
+      <li><a href="#step-7" class="hover:text-zinc-100">7. Upload to YouTube</a></li>
+    </ol>
+    <div class="mt-8 p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+      <div class="text-xs uppercase tracking-wide text-zinc-500 mb-2">Stack</div>
+      <ul class="space-y-1 text-zinc-300">
+        <li>🟧 Claude Code</li>
+        <li>🎵 KIE (Suno)</li>
+        <li>🎬 Freebeat MCP</li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="space-y-10">
+
+    <section class="rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-8">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Build a faceless YouTube channel.</h1>
+      <p class="mt-3 text-zinc-400 text-lg">One Claude Code prompt → music + video → upload. Open this guide alongside the video and tick the steps as you go.</p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="#step-1" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md">Start →</a>
+        <a href="https://freebeat.ai/?ref=ailuke" target="_blank" rel="noopener"
+           class="border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-md">What is Freebeat?</a>
+      </div>
+    </section>
+
+    <!-- STEP 1 -->
+    <article id="step-1" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="1">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">1</div>
+        <div>
+          <h2 class="text-xl font-semibold">Install Claude Code</h2>
+          <p class="text-zinc-400 text-sm">The orchestrator. One prompt fires the whole pipeline.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <div class="code-block" data-code="npm install -g @anthropic-ai/claude-code"></div>
+        <p class="text-sm text-zinc-400">Then sign in once with <code class="text-zinc-200">claude</code> in any folder.</p>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 2 -->
+    <article id="step-2" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="2">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">2</div>
+        <div>
+          <h2 class="text-xl font-semibold">Clone the repo</h2>
+          <p class="text-zinc-400 text-sm">Everything you need is here. No build step.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <div class="code-block" data-code="git clone https://github.com/lukejbyrne/freebeat-pipeline.git
+cd freebeat-pipeline
+pip install requests"></div>
+        <details class="text-sm text-zinc-400">
+          <summary class="text-zinc-300 hover:text-white">What's in here?</summary>
+          <ul class="mt-2 list-disc pl-6 space-y-1">
+            <li><code>CLAUDE.md</code> — instructions Claude reads automatically</li>
+            <li><code>.mcp.json</code> — registers the Freebeat MCP server</li>
+            <li><code>prompts/</code> — music + video prompt templates</li>
+            <li><code>tracks.csv</code> — batch input</li>
+            <li><code>scripts/gen_music.py</code> — KIE Suno helper</li>
+          </ul>
+        </details>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 3 -->
+    <article id="step-3" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="3">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">3</div>
+        <div>
+          <h2 class="text-xl font-semibold">Get a KIE API key</h2>
+          <p class="text-zinc-400 text-sm">KIE is the gateway to Suno (music). Pay-as-you-go, ~$0.10 per track.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <ol class="list-decimal pl-6 text-zinc-300 space-y-1 text-sm">
+          <li>Sign up at <a class="text-orange-400 hover:underline" href="https://kie.ai" target="_blank" rel="noopener">kie.ai</a></li>
+          <li>Top up $5 of credit (more than enough to follow along)</li>
+          <li>Copy your API key from the dashboard</li>
+        </ol>
+        <div class="code-block" data-code="cp .env.example .env
+# then paste your key:
+# KIE_API_KEY=sk-..."></div>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 4 -->
+    <article id="step-4" class="step rounded-xl bg-gradient-to-br from-orange-500/10 to-zinc-900 border border-orange-500/40 p-6 scroll-mt-24" data-step="4">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">4</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-semibold">Install Freebeat MCP</h2>
+            <span class="text-xs uppercase tracking-wide bg-orange-500 text-zinc-950 px-2 py-0.5 rounded font-bold">sponsor</span>
+          </div>
+          <p class="text-zinc-300 text-sm">The video generator. Plugs straight into Claude Code via MCP — no glue code.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <p class="text-sm text-zinc-300">Grab your Freebeat API key, then add it to <code>.env</code>:</p>
+        <div class="code-block" data-code="# in .env, alongside KIE_API_KEY:
+FREEBEAT_API_KEY=fb-..."></div>
+        <p class="text-sm text-zinc-300">That's it — <code>.mcp.json</code> already wires up the Freebeat MCP server. When you launch Claude Code in this folder it'll spawn the MCP automatically and the <code>freebeat</code> tools become available.</p>
+        <a href="https://freebeat.ai/?ref=ailuke" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md">
+          Sign up for Freebeat (referral) →
+        </a>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 5 -->
+    <article id="step-5" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="5">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">5</div>
+        <div>
+          <h2 class="text-xl font-semibold">Run the pipeline</h2>
+          <p class="text-zinc-400 text-sm">One prompt. Music + video. ~3–5 minutes end to end.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <div class="code-block" data-code="claude"></div>
+        <p class="text-sm text-zinc-400">Then in Claude Code, type:</p>
+        <div class="code-block" data-code="run the pipeline"></div>
+        <p class="text-sm text-zinc-400">Claude reads <code>CLAUDE.md</code> and runs:</p>
+        <ol class="list-decimal pl-6 text-sm text-zinc-300 space-y-1">
+          <li><code>scripts/gen_music.py</code> → KIE Suno → <code>output/demo/music.mp3</code></li>
+          <li><code>freebeat.upload_audio</code> → <code>music_id</code></li>
+          <li><code>freebeat.generate_music_video</code> → <code>task_id</code></li>
+          <li><code>freebeat.get_task_status</code> until done</li>
+          <li><code>freebeat.get_task_result</code> → download mp4 to <code>output/demo/video.mp4</code></li>
+        </ol>
+        <details class="text-sm">
+          <summary class="text-zinc-300 hover:text-white">Want a custom prompt?</summary>
+          <p class="mt-2 text-zinc-400">Edit <code>prompts/music.txt</code> and <code>prompts/video.txt</code> — or just describe what you want in chat and Claude will use that instead.</p>
+        </details>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 6 -->
+    <article id="step-6" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="6">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">6</div>
+        <div>
+          <h2 class="text-xl font-semibold">Batch mode</h2>
+          <p class="text-zinc-400 text-sm">Five tracks while you grab a coffee.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3">
+        <p class="text-sm text-zinc-400">Edit <code>tracks.csv</code> — one row per track. Then:</p>
+        <div class="code-block" data-code="python scripts/run_batch.py"></div>
+        <p class="text-sm text-zinc-400">Music is generated in parallel. Each row drops a <code>needs_video</code> marker. Back in Claude:</p>
+        <div class="code-block" data-code="finish the queued videos"></div>
+        <p class="text-sm text-zinc-400">Claude sweeps the markers and calls Freebeat for each. Re-runnable — anything already done is skipped.</p>
+      </div>
+      <button class="next-btn mt-5">Done — next →</button>
+    </article>
+
+    <!-- STEP 7 -->
+    <article id="step-7" class="step rounded-xl bg-zinc-900 border border-zinc-800 p-6 scroll-mt-24" data-step="7">
+      <header class="flex items-start gap-4">
+        <div class="step-num shrink-0 w-9 h-9 rounded-full bg-zinc-800 grid place-items-center font-semibold">7</div>
+        <div>
+          <h2 class="text-xl font-semibold">Upload to YouTube</h2>
+          <p class="text-zinc-400 text-sm">Drag, title, schedule. Done.</p>
+        </div>
+      </header>
+      <div class="mt-4 space-y-3 text-sm text-zinc-300">
+        <p>Drag <code>output/&lt;id&gt;/video.mp4</code> into <a class="text-orange-400 hover:underline" href="https://studio.youtube.com" target="_blank" rel="noopener">YouTube Studio</a>. Use the prompt as your description, slap on a thumbnail, set monetization on. That's the whole channel.</p>
+        <p class="text-zinc-400">Honest take: the first track I uploaded got a Buy Me a Coffee tip within 6 hours. It won't always — but the cost per track is cents, so the math works.</p>
+      </div>
+      <button class="next-btn mt-5">Mark complete ✓</button>
+    </article>
+
+    <section class="rounded-xl bg-gradient-to-br from-orange-500/15 to-zinc-900 border border-orange-500/40 p-6">
+      <h3 class="text-lg font-semibold">You're done.</h3>
+      <p class="text-zinc-300 text-sm mt-1">If this saved you a weekend, the kindest thing you can do is sign up for Freebeat with my link — it's how I keep making free guides like this.</p>
+      <a href="https://freebeat.ai/?ref=ailuke" target="_blank" rel="noopener"
+         class="inline-block mt-3 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md">
+        Sign up for Freebeat →
+      </a>
+    </section>
+
+    <footer class="text-center text-zinc-500 text-xs pt-8 pb-12">
+      Built with Luke · <a class="hover:text-zinc-300" href="https://www.youtube.com/@AI_LUKE" target="_blank" rel="noopener">@AI_LUKE</a>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // hydrate code blocks with copy buttons
+  document.querySelectorAll('.code-block').forEach((el) => {
+    const code = el.dataset.code || '';
+    el.innerHTML = `
+      <div class="relative group rounded-lg bg-zinc-950 border border-zinc-800">
+        <pre class="p-4 pr-24 text-sm overflow-x-auto"><code></code></pre>
+        <button class="copy-btn absolute top-2 right-2 text-xs px-2 py-1 rounded border border-zinc-700 bg-zinc-900 text-zinc-300">
+          Copy
+        </button>
+      </div>`;
+    el.querySelector('code').textContent = code;
+    const btn = el.querySelector('.copy-btn');
+    btn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(code);
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => (btn.textContent = 'Copy'), 1400);
+    });
+  });
+
+  // step progress (persists in localStorage)
+  const total = 7;
+  const KEY = 'freebeat-guide-progress';
+  const done = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+
+  function render() {
+    document.querySelectorAll('.step').forEach((el) => {
+      const n = +el.dataset.step;
+      el.classList.toggle('done', done.has(n));
+    });
+    document.getElementById('progress-text').textContent = `${done.size} / ${total}`;
+    document.getElementById('progress-bar').style.width = `${(done.size / total) * 100}%`;
+  }
+
+  document.querySelectorAll('.next-btn').forEach((btn) => {
+    btn.className = 'next-btn mt-5 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm';
+    btn.addEventListener('click', () => {
+      const article = btn.closest('.step');
+      const n = +article.dataset.step;
+      done.add(n);
+      localStorage.setItem(KEY, JSON.stringify([...done]));
+      render();
+      const next = document.getElementById(`step-${n + 1}`);
+      if (next) next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
