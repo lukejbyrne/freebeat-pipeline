@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Freebeat Studio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  html { scroll-behavior: smooth; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  textarea { resize: vertical; }
+  .pulse-dot { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+  .step-card { transition: opacity .35s ease, transform .35s ease; }
+  .step-card.hidden { display: none; }
+  .step-card.appear { opacity: 0; transform: translateY(8px); }
+  .step-card.appear.in { opacity: 1; transform: translateY(0); }
+  .phase-pill.active { background: #f9731620; border-color: #f97316; color: #fed7aa; }
+  .phase-pill.done { background: #10b98115; border-color: #10b981; color: #6ee7b7; }
+  .phase-pill.failed { background: #ef444415; border-color: #ef4444; color: #fca5a5; }
+  .log-line { font-variant-numeric: tabular-nums; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+<header class="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+  <div class="max-w-5xl mx-auto px-6 py-3 flex items-center gap-4">
+    <div class="font-semibold tracking-tight">Freebeat Studio</div>
+    <div class="text-zinc-500 text-sm hidden md:block">idea → music → video, real APIs</div>
+    <div class="ml-auto flex items-center gap-2 text-xs">
+      <span id="track-id-badge" class="px-2 py-1 rounded bg-zinc-800 text-zinc-300 mono"></span>
+      <button id="reset-btn" class="border border-zinc-700 hover:border-zinc-500 px-2 py-1 rounded">New track</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+  <!-- STEP 1 — IDEA / MUSIC PROMPT -->
+  <section id="step-music-prompt" class="step-card rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-orange-500 text-zinc-950 grid place-items-center font-bold text-sm">1</div>
+      <h2 class="text-lg font-semibold">Music prompt</h2>
+      <span class="text-xs text-zinc-500 ml-auto">sent to Suno via KIE</span>
+    </header>
+    <textarea id="music-prompt" rows="3" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3">Study lofi hip-hop, 72 BPM, mellow jazz piano, dusty boom-bap drums, vinyl crackle, soft rain ambience, no vocals, instrumental, 2 minutes.</textarea>
+    <div class="mt-3 grid md:grid-cols-3 gap-2 text-sm">
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Model</span>
+        <select id="music-model" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option value="V4_5PLUS">V4_5PLUS</option>
+          <option value="V4_5">V4_5</option>
+          <option value="V4">V4</option>
+          <option value="V3_5">V3_5</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Instrumental</span>
+        <select id="music-instrumental" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option value="true">yes</option>
+          <option value="false">no</option>
+        </select>
+      </label>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2 items-center">
+      <button id="gen-music-btn" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">🎵 Generate music</button>
+      <span class="text-xs text-zinc-500">~$0.30 · 1–4 min</span>
+    </div>
+    <div id="music-progress" class="hidden mt-4 rounded-lg bg-zinc-950 border border-zinc-800 p-3 text-sm">
+      <div class="flex items-center gap-2 mb-2">
+        <span id="music-dot" class="w-2 h-2 rounded-full bg-orange-500 pulse-dot"></span>
+        <span id="music-status" class="text-zinc-200 mono">PENDING</span>
+        <span id="music-elapsed" class="ml-auto text-zinc-500 mono text-xs">0:00</span>
+      </div>
+      <div id="music-log" class="space-y-1 text-xs text-zinc-400 mono max-h-48 overflow-y-auto"></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 — MUSIC PLAYER -->
+  <section id="step-music-player" class="step-card hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 grid place-items-center font-bold text-sm">2</div>
+      <h2 class="text-lg font-semibold">Listen</h2>
+      <span class="text-xs text-emerald-400 ml-auto">✓ ready</span>
+    </header>
+    <audio id="music-audio" controls preload="metadata" class="w-full"></audio>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button id="approve-music-btn" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">👍 Sounds good — continue</button>
+      <button id="regen-music-btn" class="border border-zinc-700 hover:border-zinc-500 px-3 py-2 rounded-md text-sm text-zinc-300">🔄 Regenerate</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 — VIDEO -->
+  <section id="step-video-prompt" class="step-card hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 grid place-items-center font-bold text-sm">3</div>
+      <h2 class="text-lg font-semibold">Send to Freebeat</h2>
+      <span class="text-xs text-zinc-500 ml-auto">Freebeat reads the audio and plans the scenes</span>
+    </header>
+    <input id="video-prompt" type="text" placeholder="(optional) one-line vibe nudge" value="" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm" />
+    <div class="mt-3 grid md:grid-cols-3 gap-2 text-sm">
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Aspect</span>
+        <select id="video-aspect" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option>16:9</option><option>9:16</option><option>1:1</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Resolution</span>
+        <select id="video-resolution" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option value="1080">1080p</option>
+          <option value="720">720p</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">MV type</span>
+        <select id="video-mvtype" class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option>abstract</option><option>singing</option><option>storytelling</option>
+        </select>
+      </label>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2 items-center">
+      <button id="gen-video-btn" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">🎬 Generate video</button>
+      <span class="text-xs text-zinc-500">~10 min · failures auto-refund</span>
+    </div>
+
+    <div id="video-progress" class="hidden mt-4 rounded-lg bg-zinc-950 border border-zinc-800 p-3 text-sm">
+      <div class="flex items-center gap-2 mb-3">
+        <span id="video-dot" class="w-2 h-2 rounded-full bg-orange-500 pulse-dot"></span>
+        <span id="video-status" class="text-zinc-200 mono">PENDING</span>
+        <span id="video-elapsed" class="ml-auto text-zinc-500 mono text-xs">0:00</span>
+      </div>
+      <div id="video-log" class="space-y-1 text-xs text-zinc-400 mono max-h-72 overflow-y-auto"></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 — VIDEO PLAYER -->
+  <section id="step-video-player" class="step-card hidden rounded-xl bg-gradient-to-br from-orange-500/10 to-zinc-900 border border-orange-500/40 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-orange-500 text-zinc-950 grid place-items-center font-bold text-sm">4</div>
+      <h2 class="text-lg font-semibold">Your music video</h2>
+      <span id="video-meta" class="text-xs text-emerald-400 ml-auto">✓ ready</span>
+    </header>
+    <video id="video-player" controls preload="metadata" class="w-full rounded-lg bg-black"></video>
+    <div class="mt-4 grid md:grid-cols-3 gap-2">
+      <a id="video-download" href="#" download class="text-center bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">⬇️ Download mp4</a>
+      <a href="https://studio.youtube.com" target="_blank" rel="noopener" class="text-center border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-md text-sm text-zinc-300">📺 Upload to YouTube</a>
+      <button id="new-track-btn" class="border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-md text-sm text-zinc-300">+ New track</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="text-center text-zinc-500 text-xs pb-12 pt-6">
+  Built with Luke · Real APIs. KIE → Freebeat. Outputs in <span class="mono">output/&lt;track_id&gt;/</span>.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const fmt = (ms) => { const s = Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+
+const state = {
+  trackId: `studio_${Date.now()}`,
+  musicTaskId: null,
+  videoTaskId: null,
+};
+$('track-id-badge').textContent = state.trackId;
+
+function reveal(stepId) {
+  const el = $(stepId);
+  el.classList.remove('hidden');
+  el.classList.add('appear');
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  const num = el.querySelector('header > div:first-child');
+  if (num) { num.classList.remove('bg-zinc-800', 'text-zinc-300'); num.classList.add('bg-orange-500', 'text-zinc-950'); }
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+function appendLog(containerId, text, dotColor='bg-zinc-600') {
+  const el = document.createElement('div');
+  el.className = 'log-line flex items-center gap-2';
+  el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span><span></span>`;
+  el.lastElementChild.textContent = text;
+  $(containerId).appendChild(el);
+  $(containerId).parentElement.scrollTop = 9999;
+}
+
+async function jpost(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error ? JSON.stringify(j.error) : `${path} ${r.status}`);
+  return j;
+}
+async function jget(path) {
+  const r = await fetch(path);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error ? JSON.stringify(j.error) : `${path} ${r.status}`);
+  return j;
+}
+
+// ---------- music ----------
+$('gen-music-btn').addEventListener('click', async () => {
+  const btn = $('gen-music-btn');
+  btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed');
+  $('music-progress').classList.remove('hidden');
+  $('music-log').innerHTML = '';
+  $('music-status').textContent = 'SUBMITTING';
+  $('music-status').className = 'text-zinc-200 mono';
+  $('music-dot').className = 'w-2 h-2 rounded-full bg-orange-500 pulse-dot';
+
+  const start = Date.now();
+  const tick = setInterval(() => $('music-elapsed').textContent = fmt(Date.now() - start), 250);
+
+  try {
+    appendLog('music-log', '→ POST /api/music', 'bg-orange-500');
+    const sub = await jpost('/api/music', {
+      prompt: $('music-prompt').value.trim(),
+      model: $('music-model').value,
+      instrumental: $('music-instrumental').value === 'true',
+      track_id: state.trackId,
+    });
+    state.musicTaskId = sub.task_id;
+    state.trackId = sub.track_id;
+    $('track-id-badge').textContent = state.trackId;
+    appendLog('music-log', `✓ taskId=${sub.task_id}`, 'bg-orange-500');
+
+    let lastStatus = null;
+    while (true) {
+      await sleep(6000);
+      const s = await jget(`/api/music/status?task_id=${encodeURIComponent(sub.task_id)}&track_id=${encodeURIComponent(state.trackId)}`);
+      if (s.status !== lastStatus) {
+        appendLog('music-log', `status=${s.status}`, 'bg-orange-500');
+        $('music-status').textContent = s.status;
+        lastStatus = s.status;
+      }
+      if (s.error) throw new Error(s.error);
+      if (s.audio_url) {
+        appendLog('music-log', `⬇ saved ${s.audio_url}`, 'bg-emerald-500');
+        $('music-status').textContent = 'COMPLETED';
+        $('music-status').className = 'text-emerald-400 mono';
+        $('music-dot').className = 'w-2 h-2 rounded-full bg-emerald-500';
+        $('music-audio').src = s.audio_url;
+        clearInterval(tick);
+        reveal('step-music-player');
+        return;
+      }
+    }
+  } catch (e) {
+    clearInterval(tick);
+    appendLog('music-log', `✗ ${e.message}`, 'bg-red-500');
+    $('music-status').textContent = 'FAILED';
+    $('music-status').className = 'text-red-400 mono';
+    $('music-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+    btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+});
+
+$('regen-music-btn').addEventListener('click', () => {
+  // start over with a fresh track_id so we don't overwrite the saved mp3
+  state.trackId = `studio_${Date.now()}`;
+  $('track-id-badge').textContent = state.trackId;
+  $('step-music-player').classList.add('hidden');
+  $('gen-music-btn').disabled = false;
+  $('gen-music-btn').classList.remove('opacity-60', 'cursor-not-allowed');
+  $('gen-music-btn').click();
+});
+
+$('approve-music-btn').addEventListener('click', () => reveal('step-video-prompt'));
+
+// ---------- video ----------
+$('gen-video-btn').addEventListener('click', async () => {
+  const btn = $('gen-video-btn');
+  btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed');
+  $('video-progress').classList.remove('hidden');
+  $('video-log').innerHTML = '';
+  $('video-status').textContent = 'SUBMITTING';
+  $('video-status').className = 'text-zinc-200 mono';
+  $('video-dot').className = 'w-2 h-2 rounded-full bg-orange-500 pulse-dot';
+
+  const start = Date.now();
+  const tick = setInterval(() => $('video-elapsed').textContent = fmt(Date.now() - start), 250);
+
+  try {
+    appendLog('video-log', '→ uploading audio + creating session', 'bg-orange-500');
+    const sub = await jpost('/api/video', {
+      track_id: state.trackId,
+      prompt: $('video-prompt').value.trim() || null,
+      mv_type: $('video-mvtype').value,
+      aspect_ratio: $('video-aspect').value,
+      resolution: parseInt($('video-resolution').value, 10),
+      watermark: false,
+    });
+    state.videoTaskId = sub.task_id;
+    appendLog('video-log', `✓ music_id=${sub.music_id} task=${sub.task_id}`, 'bg-orange-500');
+
+    let lastStatus = null;
+    while (true) {
+      await sleep(8000);
+      const s = await jget(`/api/video/status?task_id=${encodeURIComponent(sub.task_id)}`);
+      const status = (s.status || '').toString();
+      if (status !== lastStatus) {
+        appendLog('video-log', `status=${status}` + (s.errorMsg ? ` · ${s.errorMsg}` : ''), 'bg-orange-500');
+        $('video-status').textContent = status.toUpperCase();
+        lastStatus = status;
+      }
+      const norm = status.trim().toLowerCase();
+      if (norm === 'failed') {
+        throw new Error(s.errorMsg || 'video generation failed');
+      }
+      if (norm === 'completed') {
+        appendLog('video-log', '→ fetching result', 'bg-orange-500');
+        const r = await jget(`/api/video/result?task_id=${encodeURIComponent(sub.task_id)}&track_id=${encodeURIComponent(state.trackId)}`);
+        if (r.status === 'failed') throw new Error(r.error || 'failed');
+        if (r.video_url) {
+          appendLog('video-log', `⬇ saved ${r.video_url} (${(r.size_bytes/1024/1024).toFixed(1)} MB)`, 'bg-emerald-500');
+          $('video-status').textContent = 'COMPLETED';
+          $('video-status').className = 'text-emerald-400 mono';
+          $('video-dot').className = 'w-2 h-2 rounded-full bg-emerald-500';
+          $('video-player').src = r.video_url;
+          $('video-download').href = r.video_url;
+          $('video-meta').textContent = `✓ ready · ${(r.size_bytes/1024/1024).toFixed(1)} MB`;
+          clearInterval(tick);
+          reveal('step-video-player');
+          return;
+        }
+      }
+    }
+  } catch (e) {
+    clearInterval(tick);
+    appendLog('video-log', `✗ ${e.message}`, 'bg-red-500');
+    $('video-status').textContent = 'FAILED';
+    $('video-status').className = 'text-red-400 mono';
+    $('video-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+    btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+});
+
+$('reset-btn').addEventListener('click', () => location.reload());
+$('new-track-btn').addEventListener('click', () => location.reload());
+</script>
+</body>
+</html>

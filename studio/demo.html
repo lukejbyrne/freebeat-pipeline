@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Freebeat Studio — Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  html { scroll-behavior: smooth; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  textarea { resize: vertical; }
+  .pulse-dot { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+  .step-card { transition: opacity .35s ease, transform .35s ease; }
+  .step-card.hidden { display: none; }
+  .step-card.appear { opacity: 0; transform: translateY(8px); }
+  .step-card.appear.in { opacity: 1; transform: translateY(0); }
+  .phase-pill.active { background: #f9731620; border-color: #f97316; color: #fed7aa; }
+  .phase-pill.done { background: #10b98115; border-color: #10b981; color: #6ee7b7; }
+  .phase-pill.failed { background: #ef444415; border-color: #ef4444; color: #fca5a5; }
+  .log-line { font-variant-numeric: tabular-nums; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+<header class="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+  <div class="max-w-5xl mx-auto px-6 py-3 flex items-center gap-4">
+    <div class="font-semibold tracking-tight">Freebeat Studio</div>
+    <div class="text-zinc-500 text-sm hidden md:block">demo · idea → music → video, all in your browser</div>
+    <div class="ml-auto flex items-center gap-2 text-xs">
+      <span class="px-2 py-1 rounded bg-zinc-800 text-zinc-300">DEMO MODE</span>
+      <button id="reset-btn" class="border border-zinc-700 hover:border-zinc-500 px-2 py-1 rounded">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+  <!-- API keys (collapsed in demo) -->
+  <details class="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
+    <summary class="flex items-center gap-3">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+      <span class="font-semibold">API keys</span>
+      <span class="text-xs text-zinc-500">connected · KIE_API_KEY ✓ · FREEBEAT_API_KEY ✓</span>
+      <span class="ml-auto text-zinc-500 text-xs">Click to expand</span>
+    </summary>
+    <div class="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+      <label class="block">
+        <span class="text-zinc-400 text-xs uppercase tracking-wide">KIE API key</span>
+        <input type="password" value="sk-••••••••••••••••" class="w-full mt-1 mono bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5" />
+      </label>
+      <label class="block">
+        <span class="text-zinc-400 text-xs uppercase tracking-wide">Freebeat API key</span>
+        <input type="password" value="fb-••••••••••••••••" class="w-full mt-1 mono bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5" />
+      </label>
+    </div>
+    <p class="mt-2 text-xs text-zinc-500">Stored in <span class="mono">localStorage</span>. Never leaves your machine.</p>
+  </details>
+
+  <!-- STEP 1 — IDEA -->
+  <section id="step-idea" class="step-card rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-orange-500 text-zinc-950 grid place-items-center font-bold text-sm">1</div>
+      <h2 class="text-lg font-semibold">Your idea</h2>
+    </header>
+    <textarea id="idea" rows="2" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-zinc-100">Cozy lofi anime girl studying late at night by a rainy window — Studio Ghibli vibe, very chill</textarea>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button id="gen-prompts-btn" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">✨ Generate music + video prompts</button>
+      <button class="border border-zinc-700 hover:border-zinc-500 px-3 py-2 rounded-md text-sm text-zinc-300">📝 Write lyrics</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 — MUSIC PROMPT -->
+  <section id="step-music-prompt" class="step-card hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 grid place-items-center font-bold text-sm">2</div>
+      <h2 class="text-lg font-semibold">Music prompt</h2>
+      <span class="text-xs text-zinc-500 ml-auto">edit before sending to Suno</span>
+    </header>
+    <textarea id="music-prompt" rows="3" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3"></textarea>
+    <div class="mt-3 flex flex-wrap gap-2 items-center">
+      <button id="gen-music-btn" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">🎵 Generate music with Suno</button>
+      <span class="text-xs text-zinc-500">via KIE · ~$0.30 · ~4 min</span>
+    </div>
+    <div id="music-progress" class="hidden mt-4 rounded-lg bg-zinc-950 border border-zinc-800 p-3 text-sm">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-2 h-2 rounded-full bg-orange-500 pulse-dot"></span>
+        <span id="music-status" class="text-zinc-200 mono">PENDING</span>
+        <span id="music-elapsed" class="ml-auto text-zinc-500 mono text-xs">0:00</span>
+      </div>
+      <div id="music-log" class="space-y-1 text-xs text-zinc-400 mono"></div>
+    </div>
+  </section>
+
+  <!-- STEP 3 — MUSIC PLAYER -->
+  <section id="step-music-player" class="step-card hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 grid place-items-center font-bold text-sm">3</div>
+      <h2 class="text-lg font-semibold">Listen</h2>
+      <span class="text-xs text-emerald-400 ml-auto">✓ ready</span>
+    </header>
+    <audio id="music-audio" controls preload="metadata" class="w-full">
+      <source src="../output/demo/music.mp3" type="audio/mpeg" />
+    </audio>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button id="approve-music-btn" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">👍 Sounds good — continue</button>
+      <button class="border border-zinc-700 hover:border-zinc-500 px-3 py-2 rounded-md text-sm text-zinc-300">🔄 Regenerate</button>
+    </div>
+  </section>
+
+  <!-- STEP 4 — VIDEO (Freebeat handles the prompt) -->
+  <section id="step-video-prompt" class="step-card hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-zinc-800 text-zinc-300 grid place-items-center font-bold text-sm">4</div>
+      <h2 class="text-lg font-semibold">Send to Freebeat</h2>
+      <span class="text-xs text-zinc-500 ml-auto">no prompt-engineering needed — Freebeat reads the audio</span>
+    </header>
+    <p class="text-sm text-zinc-400 mb-3">Freebeat analyses the track, picks a style, plans the scenes, and renders. Optional one-line vibe nudge:</p>
+    <input id="video-prompt" type="text" placeholder="(optional) e.g. cozy ghibli study lofi" value="cozy ghibli study lofi" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm" />
+    <div class="mt-3 grid md:grid-cols-3 gap-2 text-sm">
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Aspect</span>
+        <select class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option>16:9</option><option>9:16</option><option>1:1</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">Resolution</span>
+        <select class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option>1080p</option><option>720p</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-zinc-500 text-xs uppercase tracking-wide">MV type</span>
+        <select class="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5">
+          <option>abstract</option><option>singing</option><option>storytelling</option>
+        </select>
+      </label>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2 items-center">
+      <button id="gen-video-btn" class="bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">🎬 Generate video with Freebeat</button>
+      <span class="text-xs text-zinc-500">~10 min · failures auto-refund</span>
+    </div>
+
+    <!-- Freebeat's internal phases shown as progress -->
+    <div id="video-progress" class="hidden mt-4 rounded-lg bg-zinc-950 border border-zinc-800 p-3 text-sm">
+      <div class="flex items-center gap-2 mb-3">
+        <span id="video-dot" class="w-2 h-2 rounded-full bg-orange-500 pulse-dot"></span>
+        <span id="video-status" class="text-zinc-200 mono">PENDING</span>
+        <span id="video-attempts" class="text-zinc-500 mono text-xs">attempt 1/4</span>
+        <span id="video-elapsed" class="ml-auto text-zinc-500 mono text-xs">0:00</span>
+      </div>
+      <div id="phase-grid" class="grid grid-cols-2 md:grid-cols-6 gap-1.5 mb-3 text-xs">
+        <div data-phase="analysis" class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Music Analysis</div>
+        <div data-phase="style"    class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Style Lock</div>
+        <div data-phase="brief"    class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Creative Brief</div>
+        <div data-phase="refs"     class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Reference Images</div>
+        <div data-phase="scenes"   class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Scene Planning</div>
+        <div data-phase="render"   class="phase-pill px-2 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-center">Render</div>
+      </div>
+      <div id="video-log" class="space-y-1 text-xs text-zinc-400 mono max-h-56 overflow-y-auto"></div>
+    </div>
+  </section>
+
+  <!-- STEP 5 — VIDEO PLAYER -->
+  <section id="step-video-player" class="step-card hidden rounded-xl bg-gradient-to-br from-orange-500/10 to-zinc-900 border border-orange-500/40 p-6">
+    <header class="flex items-center gap-3 mb-3">
+      <div class="w-7 h-7 rounded-full bg-orange-500 text-zinc-950 grid place-items-center font-bold text-sm">5</div>
+      <h2 class="text-lg font-semibold">Your music video</h2>
+      <span class="text-xs text-emerald-400 ml-auto">✓ ready · 1080p · 109 MB</span>
+    </header>
+    <video id="video-player" controls preload="metadata" class="w-full rounded-lg bg-black">
+      <source src="../output/demo/video.mp4" type="video/mp4" />
+    </video>
+    <div class="mt-4 grid md:grid-cols-3 gap-2">
+      <a href="../output/demo/video.mp4" download class="text-center bg-orange-500 hover:bg-orange-400 text-zinc-950 font-semibold px-4 py-2 rounded-md text-sm">⬇️ Download mp4</a>
+      <a href="https://studio.youtube.com" target="_blank" rel="noopener" class="text-center border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-md text-sm text-zinc-300">📺 Upload to YouTube</a>
+      <button id="new-track-btn" class="border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-md text-sm text-zinc-300">+ New track</button>
+    </div>
+    <details class="mt-4">
+      <summary class="text-xs text-zinc-400 hover:text-zinc-200">View full task log (4 attempts)</summary>
+      <pre class="mt-2 mono text-xs text-zinc-400 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-x-auto">[12:01] Attempt 1 · task OA001498398768695873536 · mv_type=storytelling
+[12:24] ✗ failed · "Scene 1 is not successful: failed"
+[12:24] ↪ refunded +180 credits + apology bonus +36
+
+[12:30] Attempt 2 · task OA001498409439659560960 · mv_type=abstract
+[12:53] ✗ failed · "generate video segments failed"
+[12:53] ↪ refunded +1459 credits + apology bonus +292
+
+[12:59] Attempt 3 · task OA001498413183424008192 · mv_type=abstract · style="Studio Ghibli lofi"
+[13:06] ✗ failed · "Scene 3 is not successful: failed"
+[13:06] ↪ refunded +241 credits + apology bonus +49
+
+[13:11] Attempt 4 · task OA001498417923536982016 · same args
+[13:33] ✓ completed · 1080p · 109 MB
+[13:33] ⬇ saved to output/demo/video.mp4
+
+Total cost (after refunds): ~$1.50
+Net credit change: +297 (more credits than we started with)</pre>
+    </details>
+  </section>
+
+</main>
+
+<footer class="text-center text-zinc-500 text-xs pb-12 pt-6">
+  Built with Luke · This is a demo. The live version (with real API calls) is in <span class="mono">studio/index.html</span>.
+</footer>
+
+<script>
+  // pre-baked outputs that match what we actually shipped
+  const MUSIC_PROMPT = `Study lofi hip-hop, 72 BPM, mellow jazz piano, dusty boom-bap drums, vinyl crackle, soft rain ambience, no vocals, instrumental, 2 minutes.`;
+
+  const MUSIC_TIMELINE = [
+    { delay: 200,  text: '→ POST https://api.kie.ai/api/v1/generate' },
+    { delay: 500,  text: '✓ taskId received: 4f9c2e1a' },
+    { delay: 900,  text: 'status: PENDING' },
+    { delay: 1300, text: 'status: TEXT_SUCCESS' },
+    { delay: 1700, text: 'status: FIRST_SUCCESS' },
+    { delay: 2100, text: 'status: SUCCESS' },
+    { delay: 2300, text: '⬇ downloading audioUrl ...' },
+    { delay: 2700, text: '✓ saved music.mp3 (2.6 MB)' },
+  ];
+
+  const VIDEO_TIMELINE = [
+    { delay: 200,  text: '→ freebeat.upload_audio(file=music.mp3)', dotColor: 'bg-orange-500' },
+    { delay: 600,  text: '✓ music_id=1302117', dotColor: 'bg-orange-500' },
+    { delay: 1000, text: '→ freebeat.generate_music_video(mv_type=storytelling)', attempt: '1/4', dotColor: 'bg-orange-500' },
+    { delay: 1300, text: '⚙ Music Analysis · 72 BPM · ambient electronic + lofi', dotColor: 'bg-orange-500', phase: 'analysis' },
+    { delay: 1600, text: '⚙ Style Lock · "Prismatic Primal Minimalism"', dotColor: 'bg-orange-500', phase: 'style' },
+    { delay: 1900, text: '⚙ Creative Brief · 1 character · 2 locations', dotColor: 'bg-orange-500', phase: 'brief' },
+    { delay: 2150, text: '⚙ Reference Images · 5 anchors generated', dotColor: 'bg-orange-500', phase: 'refs' },
+    { delay: 2400, text: '⚙ Scene Planning · 3 scenes', dotColor: 'bg-orange-500', phase: 'scenes' },
+    { delay: 2700, text: '⚙ Render · scene 1/3 ...', dotColor: 'bg-orange-500', phase: 'render' },
+    { delay: 3000, text: '✗ Scene 1 is not successful: failed', dotColor: 'bg-red-500', kind: 'fail' },
+    { delay: 3200, text: '↪ refunded +180 credits + bonus +36', dotColor: 'bg-red-500', kind: 'refund' },
+
+    { delay: 3600, text: '→ retry attempt 2/4 (mv_type=abstract)', attempt: '2/4', dotColor: 'bg-orange-500', resetPhases: true },
+    { delay: 3900, text: '⚙ Music Analysis ✓ · Style Lock ✓ · Brief ✓', dotColor: 'bg-orange-500', phase: 'brief' },
+    { delay: 4200, text: '⚙ Render · all segments', dotColor: 'bg-orange-500', phase: 'render' },
+    { delay: 4500, text: '✗ generate video segments failed', dotColor: 'bg-red-500', kind: 'fail' },
+    { delay: 4700, text: '↪ refunded +1459 credits + bonus +292', dotColor: 'bg-red-500', kind: 'refund' },
+
+    { delay: 5100, text: '→ retry attempt 3/4 (style="Studio Ghibli lofi")', attempt: '3/4', dotColor: 'bg-orange-500', resetPhases: true },
+    { delay: 5400, text: '⚙ Render · scene 3/3 ...', dotColor: 'bg-orange-500', phase: 'render' },
+    { delay: 5700, text: '✗ Scene 3 is not successful: failed', dotColor: 'bg-red-500', kind: 'fail' },
+    { delay: 5900, text: '↪ refunded +241 credits + bonus +49', dotColor: 'bg-red-500', kind: 'refund' },
+
+    { delay: 6300, text: '→ retry attempt 4/4', attempt: '4/4', dotColor: 'bg-orange-500', resetPhases: true },
+    { delay: 6700, text: '⚙ Render · all scenes ✓', dotColor: 'bg-orange-500', phase: 'render' },
+    { delay: 7000, text: '✓ completed · 1080p · 109 MB', dotColor: 'bg-emerald-500', kind: 'win' },
+    { delay: 7300, text: '⬇ saved to output/demo/video.mp4', dotColor: 'bg-emerald-500', kind: 'win' },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+
+  function reveal(stepId, delay = 0) {
+    setTimeout(() => {
+      const el = $(stepId);
+      el.classList.remove('hidden');
+      el.classList.add('appear');
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+      const num = el.querySelector('header > div:first-child');
+      if (num) { num.classList.remove('bg-zinc-800', 'text-zinc-300'); num.classList.add('bg-orange-500', 'text-zinc-950'); }
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }, delay);
+  }
+
+  function setPhase(name, state) {
+    const el = document.querySelector(`[data-phase="${name}"]`);
+    if (!el) return;
+    el.classList.remove('active', 'done', 'failed');
+    if (state) el.classList.add(state);
+  }
+  function resetAllPhases() {
+    document.querySelectorAll('.phase-pill').forEach((el) => el.classList.remove('active', 'done', 'failed'));
+  }
+  // sequence: when a new phase activates, mark previous active phase as done
+  function advancePhase(name) {
+    document.querySelectorAll('.phase-pill.active').forEach((el) => { el.classList.remove('active'); el.classList.add('done'); });
+    setPhase(name, 'active');
+  }
+
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s/60)}:${String(s%60).padStart(2, '0')}`;
+  }
+
+  function appendLog(containerId, text, dotColor='bg-zinc-600') {
+    const el = document.createElement('div');
+    el.className = 'log-line flex items-center gap-2';
+    el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span><span>${text}</span>`;
+    $(containerId).appendChild(el);
+    $(containerId).parentElement.scrollTop = 9999;
+  }
+
+  // Step 1 → 2: reveal music prompt step (only)
+  $('gen-prompts-btn').addEventListener('click', () => {
+    $('music-prompt').value = MUSIC_PROMPT;
+    reveal('step-music-prompt');
+  });
+
+  // Step 2 → 3: simulate music gen, reveal player only when done
+  $('gen-music-btn').addEventListener('click', () => {
+    $('gen-music-btn').disabled = true;
+    $('gen-music-btn').classList.add('opacity-60', 'cursor-not-allowed');
+    $('music-progress').classList.remove('hidden');
+    $('music-status').textContent = 'PENDING';
+    $('music-log').innerHTML = '';
+    const start = Date.now();
+    const tick = setInterval(() => $('music-elapsed').textContent = fmtTime(Date.now() - start), 100);
+
+    MUSIC_TIMELINE.forEach((step) => {
+      setTimeout(() => {
+        appendLog('music-log', step.text, 'bg-orange-500');
+        if (step.text.startsWith('status:')) {
+          $('music-status').textContent = step.text.split(': ')[1];
+        }
+      }, step.delay);
+    });
+
+    setTimeout(() => {
+      clearInterval(tick);
+      $('music-status').textContent = 'COMPLETED';
+      $('music-status').className = 'text-emerald-400 mono';
+      $('music-progress').querySelector('.pulse-dot').classList.replace('bg-orange-500', 'bg-emerald-500');
+      reveal('step-music-player', 400);
+    }, 3000);
+  });
+
+  // Step 3 → 4: approve music reveals video step
+  $('approve-music-btn').addEventListener('click', () => {
+    reveal('step-video-prompt');
+  });
+
+  // Step 4 → 5: simulate Freebeat 4-attempt arc with phase pills
+  $('gen-video-btn').addEventListener('click', () => {
+    $('gen-video-btn').disabled = true;
+    $('gen-video-btn').classList.add('opacity-60', 'cursor-not-allowed');
+    $('video-progress').classList.remove('hidden');
+    $('video-status').textContent = 'PENDING';
+    $('video-status').className = 'text-zinc-200 mono';
+    $('video-attempts').textContent = 'attempt 1/4';
+    $('video-log').innerHTML = '';
+    resetAllPhases();
+    const start = Date.now();
+    const tick = setInterval(() => $('video-elapsed').textContent = fmtTime(Date.now() - start), 100);
+
+    VIDEO_TIMELINE.forEach((step) => {
+      setTimeout(() => {
+        appendLog('video-log', step.text, step.dotColor);
+        if (step.resetPhases) resetAllPhases();
+        if (step.attempt) {
+          $('video-attempts').textContent = `attempt ${step.attempt}`;
+          $('video-status').textContent = 'RUNNING';
+          $('video-status').className = 'text-zinc-200 mono';
+          $('video-dot').classList.remove('bg-red-500', 'bg-emerald-500');
+          $('video-dot').classList.add('bg-orange-500');
+        }
+        if (step.phase) advancePhase(step.phase);
+        if (step.kind === 'fail') {
+          $('video-status').textContent = 'FAILED → RETRYING';
+          $('video-status').className = 'text-red-400 mono';
+          $('video-dot').classList.remove('bg-orange-500');
+          $('video-dot').classList.add('bg-red-500');
+          document.querySelectorAll('.phase-pill.active').forEach((el) => { el.classList.remove('active'); el.classList.add('failed'); });
+        }
+        if (step.kind === 'win') {
+          $('video-status').textContent = 'COMPLETED';
+          $('video-status').className = 'text-emerald-400 mono';
+          $('video-dot').classList.remove('bg-orange-500', 'bg-red-500');
+          $('video-dot').classList.add('bg-emerald-500');
+          document.querySelectorAll('.phase-pill').forEach((el) => { el.classList.remove('active', 'failed'); el.classList.add('done'); });
+        }
+      }, step.delay);
+    });
+
+    setTimeout(() => {
+      clearInterval(tick);
+      reveal('step-video-player', 600);
+    }, 7400);
+  });
+
+  // Reset
+  $('reset-btn').addEventListener('click', () => location.reload());
+  $('new-track-btn').addEventListener('click', () => location.reload());
+</script>
+</body>
+</html>
